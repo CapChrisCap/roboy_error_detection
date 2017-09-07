@@ -20,10 +20,10 @@ std::map<NotificationCode, string> notificationMessages = {
 
 std::map<NotificationCode, string> notificationExtraMessages = {
         {UNDEFINED_NOTIFICATION, "undefined"},
-        {MOTOR_DEAD_NOTIFICATION, "Please check all calbles"},
-        {MOTOR_ALIVE_NOTIFICATION, "..."},
-        {JOINT_INVALID_REL_ANGLE_NOTIFICATION, "..."},
-        {MOTOR_IS_RUNNING_BUT_TENDENT_NOT_NOTIFICATION, "..."},
-        {JOINT_TOO_FAR_NOTIFICATION, "..."},
-        {JOINT_TOO_CLOSE_NOTIFICATION, "..."}
+        {MOTOR_DEAD_NOTIFICATION, "Please check all cables"},
+        {MOTOR_ALIVE_NOTIFICATION, "Nothing to do"},
+        {JOINT_INVALID_REL_ANGLE_NOTIFICATION, "Please check the joint for defects"},
+        {MOTOR_IS_RUNNING_BUT_TENDON_NOT_NOTIFICATION, "Please check the motor or the tendon for defects"},
+        {JOINT_TOO_FAR_NOTIFICATION, "Please check the joint for defects"},
+        {JOINT_TOO_CLOSE_NOTIFICATION, "Please check the joint for defects"}
 };
