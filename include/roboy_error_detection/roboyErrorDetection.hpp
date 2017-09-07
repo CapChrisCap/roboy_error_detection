@@ -20,8 +20,8 @@ typedef uint16_t tacho;
 typedef uint16_t NotificationInterval;
 typedef tuple <NotificationInterval> MinimalNotificationData;
 typedef tuple <angle, angle> JointAngleIntervalSubscriptionData;
-typedef tuple <NotificationInterval, tacho, tacho> MotorTendentInconstenceSubscriptionData;
-typedef boost::variant <MinimalNotificationData, JointAngleIntervalSubscriptionData, MotorTendentInconstenceSubscriptionData> NotificationData;
+typedef tuple <ObjectID, NotificationInterval, tacho, tacho> MotorTendonInconsistenceNotificationData;
+typedef boost::variant <MinimalNotificationData, MotorTendonInconsistenceNotificationData, JointAngleIntervalSubscriptionData> NotificationData;
 typedef std::map <NotificationLevel, NotificationData> NotificationDataMap;
 typedef std::map <ObjectID, NotificationDataMap> ObjectToNotificationDataMap;
 
@@ -33,7 +33,7 @@ public:
     RoboyErrorDetection(ros::NodeHandlePtr nh);
 
     /**
-     * Listen if the motor with the given id is health
+     * Listen if the motor with the given id is healthy
      * ROS topic.
      * @param motorId id of the motor, which should be observed
      * @param durationOfValidity interval, which defines the MIN sleep time in ms until the next message will be published. Set 0 to disable waiting a minimum time.
@@ -78,17 +78,19 @@ public:
                                        NotificationLevel logLevel = WARNING_LEVEL);
 
     /**
-     * Listen if a relative angle of a specific joint is invalid. Invalid means in this case that the angle is not in the specified interval
-     * [minAngle, maxAngle]. If this is the case, a message is published over ROS topic.
+     * Listen in a given interval if a motor is running but the tendon is not moving. If this is the case, a ROS message
+     * is published over the given log level. The minTacho and maxTacho parameters define the minimum and maximum tacho
+     * value range, which defines in which interval the tendon is moving or not.
+     * @param motorId id of the motor, which should be observed
      * @param jointId id of the joint, which should be observed
-     * @param minAngle minimum relative angle
-     * @param maxAngle maximum relative angle
+     * @param minTacho minimum tacho valure of a running tendon
+     * @param maxTacho maximum tacho value of a running tendon
      * @param durationOfValidity interval, which defines the MIN sleep time in ms until the next message will be published. Set 0 to disable waiting a minimum time.
      * @param logLevel message level of the published message
      */
     void
-    listenForMotorTendentInconsistence(ObjectID jointId, tacho minTacho, tacho maxTacho,
-                                       NotificationInterval durationOfValidity, NotificationLevel logLevel = WARNING_LEVEL);
+    listenForMotorTendonInconsistence(ObjectID motorId, ObjectID jointId, tacho minTacho, tacho maxTacho,
+                                       NotificationInterval durationOfValidity = 2000, NotificationLevel logLevel = WARNING_LEVEL);
 
     /**
      * Listen if a specific joint throws the error: too close or too far. If this is the case, a message is published over ROS topic.
@@ -98,8 +100,16 @@ public:
      */
     void listenForJointMagnetStatus(ObjectID jointId, NotificationInterval durationOfValidity = 2000, NotificationLevel logLevel = WARNING_LEVEL);
 
+    /**
+     * Just an internal method to provide the motor status message to the subscriptions
+     * @param msg
+     */
     void handleMotorStatusErrors(const roboy_communication_middleware::MotorStatus::ConstPtr &msg);
 
+    /**
+     * Just an internal method to provide the joint status message to the subscriptions
+     * @param msg
+     */
     void handleJointStatusErrors(const roboy_communication_middleware::JointStatus::ConstPtr &msg);
 
 private:
@@ -110,10 +120,14 @@ private:
         MOTOR_IS_DEAD_SUBSCRIPTION,
         MOTOR_IS_ALIVE_SUBSCRIPTION,
         JOINT_INVALID_REL_ANGLE_SUBSCRIPTION,
-        MOTOR_IS_RUNNING_BUT_TENDENT_NOT_SUBSCRIPTION,
+        MOTOR_IS_RUNNING_BUT_TENDON_NOT_SUBSCRIPTION,
         JOINT_MAGNET_CHECK_SUBSCRIPTION
     };
     std::map <SubscriptionType, ObjectToNotificationDataMap> subscriptions;
+    bool receivedMotorStatus = false;
+    roboy_communication_middleware::MotorStatus latestMotorStatus;
+    bool receivedJointStatus = false;
+    roboy_communication_middleware::JointStatus latestJointStatus;
 
     ros::Subscriber motorSub, jointSub;
     RoboySystemNotification notifier;
@@ -123,11 +137,11 @@ private:
     }
 
     std::map <ObjectID, std::map<NotificationLevel, ros::Time>> lastMotorHealthCheckTime,
-            lastMotorTendentInconsistentCheck, lastJointMagnetCheck;
+            lastMotorTendonInconsistentCheck, lastJointMagnetCheck;
 
     void handleJointInvalidRelAngleCheck(const roboy_communication_middleware::JointStatus::ConstPtr &msg);
     void handleJointMagnetErrors(const roboy_communication_middleware::JointStatus::ConstPtr &msg);
-    void handleMotorIsRunningButTendentNot(const roboy_communication_middleware::JointStatus::ConstPtr &msg);
+    void handleMotorIsRunningButTendonNot(const roboy_communication_middleware::JointStatus::ConstPtr &msg);
 
     void handleMotorHealthCheck(const roboy_communication_middleware::MotorStatus::ConstPtr &msg);
     void handleMotorIsAliveCheck(const roboy_communication_middleware::MotorStatus::ConstPtr &msg);
